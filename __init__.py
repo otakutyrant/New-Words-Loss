@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
 
-__license__ = "GPL v3"
-__copyright__ = "2023, otakutyrant <otakutyrant@gmail.com>"
-__docformat__ = "restructuredtext en"
-
 # The class that all Interface Action plugin wrappers must inherit from
 from calibre.customize import InterfaceActionBase
 
