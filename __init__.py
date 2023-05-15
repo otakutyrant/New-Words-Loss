@@ -8,8 +8,8 @@ from calibre.customize import InterfaceActionBase
 class ActionNewWords(InterfaceActionBase):
     """
     This class is a simple wrapper that provides information about the actual
-    plugin class. The actual interface plugin class is called InterfacePlugin
-    and is defined in the ui.py file, as specified in the actual_plugin field
+    plugin class. The actual interface plugin class is called InterfaceAction
+    and is defined in the action.py file, as specified in the actual_plugin field
     below.
 
     The reason for having two classes is that it allows the command line
