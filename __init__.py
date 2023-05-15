@@ -17,7 +17,7 @@ class ActionNewWords(InterfaceActionBase):
     """
 
     name = "New Words"
-    description = "An advanced plugin demo"
+    description = "Offer statistics about new words."
     supported_platforms = ["linux"]
     author = "otakutyrant"
     version = (0, 0, 1)
