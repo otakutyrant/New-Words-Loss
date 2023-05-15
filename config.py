@@ -20,8 +20,8 @@ prefs.defaults["learned_words_pathname"] = str(Path.home() / "learned_words.txt"
 
 
 class ConfigWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
 
         self.label = QLabel("Learned Words txt path:")
 
