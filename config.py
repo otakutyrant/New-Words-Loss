@@ -5,7 +5,7 @@ from pathlib import Path
 from calibre.utils.config import JSONConfig
 from qt.core import QWidget, QLineEdit, QPushButton, QVBoxLayout, QFileDialog, QLabel
 
-PLUGIN_ICONS = ['images/new_words.png']
+PLUGIN_ICONS = ["images/new_words.png"]
 
 
 # This is where all preferences for this plugin will be stored
