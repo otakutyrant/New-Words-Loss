@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from calibre.utils.config import JSONConfig
-from qt.core import QWidget, QLineEdit, QPushButton, QVBoxLayout, QFileDialog, QLabel
+from qt.core import QFileDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 PLUGIN_ICONS = ["images/new_words.png"]
 
