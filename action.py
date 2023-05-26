@@ -6,7 +6,7 @@ from typing import NamedTuple
 from calibre.ebooks.conversion.config import get_available_formats_for_book
 from calibre.gui2 import warning_dialog
 from calibre.gui2.actions import InterfaceAction
-from calibre.gui2.dialogs.message_box import ErrorNotification
+from calibre_plugins.new_words.jobs import do_count
 from PyQt6.QtGui import QIcon
 
 
@@ -105,52 +105,18 @@ class NewWordsAction(InterfaceAction):
         logging.info("end filtering books with txt format")
 
     def _do_job(self):
-        books = []
         for book_id in self.book_ids:
             title = self.gui.current_db.new_api.field_for("title", book_id)
             pathname = Path(self.gui.current_db.new_api.format_abspath(book_id, "txt"))
             book = Book(book_id, title, pathname)
-            books.append(book)
-        args = [
-            "calibre_plugins.new_words.jobs",
-            "do_count",
-            (books, self.gui.job_manager.server.pool_size),
-        ]
-        self.gui.job_manager.run_job(
-            self.Dispatcher(self._do_fill_columns),
-            "arbitrary_n",
-            args=args,
-            description="Calculate New Words Loss.",
+            loss = do_count(book)
+            self.gui.current_db.new_api.set_field("#new_words_loss", {book_id: loss})
+        logging.info(f"About to refresh GUI - book_ids={self.book_ids}")
+        self.gui.library_view.model().refresh_ids(self.book_ids)
+        self.gui.library_view.model().refresh_ids(
+            self.book_ids,
+            current_row=self.gui.library_view.currentIndex().row(),
         )
         self.gui.status_bar.show_message(
-            f"Counting new_words_loss in {len(books)} books"
+            f"Counting new_words_loss in {len(self.book_ids)} books"
         )
-
-    def _do_fill_columns(self, job):
-        if job.failed:
-            message_box = ErrorNotification(
-                job.details,
-                "Count log",
-                "Calculating new words loss failed",
-                "Failed to count new words. <b>View Log</b> for details",
-                show_copy_button=False,
-                parent=self.gui,
-            )
-            message_box.show()
-            return self.gui.job_exception(
-                job, dialog_title="Failed to count new words loss"
-            )
-
-        self.gui.status_bar.show_message("Calculating new words loss completed", 3000)
-
-        book_statistics = job.result
-        if len(book_statistics) > 0:
-            self.gui.current_db.new_api.set_field("#new_words_loss", book_statistics)
-
-            book_ids = list(book_statistics.keys())
-            logging.info("About to refresh GUI - book_ids=", book_ids)
-            self.gui.library_view.model().refresh_ids(book_ids)
-            self.gui.library_view.model().refresh_ids(
-                book_ids,
-                current_row=self.gui.library_view.currentIndex().row(),
-            )
