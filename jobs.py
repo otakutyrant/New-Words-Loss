@@ -4,6 +4,13 @@ from collections import Counter
 from pathlib import Path
 
 import numpy as np
+
+try:
+    import stanza
+except ImportError:
+    has_stanza_installed = False
+else:
+    has_stanza_installed = True
 from calibre_plugins.new_words.config import prefs
 
 
@@ -35,7 +42,7 @@ def discard_capital_words(words):
     return words
 
 
-def generate_lemmas(book_pathname: Path) -> Path:
+def generate_lemmas_by_lookup(book_pathname: Path) -> Path:
     hashmap = {}
     bytes_string = get_resources("lemma.en.txt")  # type: ignore # noqa: F821
     str_string = bytes_string.decode("utf-8")
@@ -58,6 +65,56 @@ def generate_lemmas(book_pathname: Path) -> Path:
         for word, count in counter.most_common():
             lemma_file.write(f"{word} {count}\n")
     return lemma_pathname
+
+
+def preprocess_before_ai(book_context: str) -> str:
+    # stanza seems to regard "well..." as a word wrongly
+    book_context = book_context.replace("…", " ")
+    return book_context
+
+
+def generate_lemmas_by_ai(
+    book_pathname,
+    nlp=stanza.Pipeline(  # noqa: E: B008
+        lang="en", processors="tokenize,mwt,pos,lemma"
+    ),
+) -> Path:
+    lemma_pathname = book_pathname.parent / "lemmas.txt"
+    pronoun_pathname = book_pathname.parent / "pronouns.txt"
+    with (
+        open(book_pathname, "r") as book_file,
+        open(lemma_pathname, "w") as lemma_file,
+        open(pronoun_pathname, "w") as pronoun_file,
+    ):
+        book_context = book_file.read()
+        book_context = preprocess_before_ai(book_context)
+        doc = nlp(book_context)
+        lemma_counter = Counter()
+        pronoun_counter = Counter()
+        for sentence in doc.sentences:
+            for word in sentence.words:
+                if word.pos == "PROPN":
+                    pronoun_counter[word.lemma] += 1
+                elif (
+                    word.pos not in ("PUNCT", "NUM", "SYM", "X")
+                    and word.lemma is not None
+                ):
+                    # Stanza seems to generate some lemmas with a capital letter
+                    # in the beginning. Altough lowering all lemmas means "I"
+                    # is affected too.
+                    lemma_counter[word.lemma.lower()] += 1
+        for word, count in lemma_counter.most_common():
+            lemma_file.write(f"{word} {count}\n")
+        for word, count in pronoun_counter.most_common():
+            pronoun_file.write(f"{word} {count}\n")
+    return lemma_pathname
+
+
+def generate_lemmas(book_pathname: Path) -> Path:
+    if has_stanza_installed:
+        return generate_lemmas_by_ai(book_pathname)
+    else:
+        return generate_lemmas_by_lookup(book_pathname)
 
 
 def generate_new_words(lemma_pathname: Path) -> Path:
