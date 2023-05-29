@@ -2,6 +2,11 @@
 
 ![](demo.png)
 
+# Requirements
+
+* numpy
+* stanza (optional, generate lemmas better than the trational way)
+
 # TODO
 
 * Explain new word loss here.
