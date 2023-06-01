@@ -49,12 +49,12 @@ class NewWordsAction(InterfaceAction):
 
     def _toolbar_triggered(self):
         if self._check_the_custom_column() is False:
-            logging.info("the custom column new_words_loss is not defined")
+            logging.warning("the custom column new_words_loss is not defined")
             return
 
         self.book_ids = self.gui.library_view.get_selected_ids()
         if not self._is_book_selected():
-            logging.info("no book selected")
+            logging.warning("no book selected")
             return
 
         self._filter_book_ids_by_format()
@@ -108,8 +108,10 @@ class NewWordsAction(InterfaceAction):
         for book_id in self.book_ids:
             title = self.gui.current_db.new_api.field_for("title", book_id)
             pathname = Path(self.gui.current_db.new_api.format_abspath(book_id, "txt"))
+            logging.info(f"handling {title=} {pathname=}")
             book = Book(book_id, title, pathname)
             loss = do_count(book)
+            logging.info(f"calculated {loss=}")
             self.gui.current_db.new_api.set_field("#new_words_loss", {book_id: loss})
         logging.info(f"About to refresh GUI - book_ids={self.book_ids}")
         self.gui.library_view.model().refresh_ids(self.book_ids)
