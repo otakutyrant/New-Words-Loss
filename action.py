@@ -1,4 +1,5 @@
 import logging
+import traceback
 from collections import OrderedDict
 from pathlib import Path
 from typing import NamedTuple
@@ -110,9 +111,15 @@ class NewWordsAction(InterfaceAction):
             pathname = Path(self.gui.current_db.new_api.format_abspath(book_id, "txt"))
             logging.info(f"handling {title=} {pathname=}")
             book = Book(book_id, title, pathname)
-            loss = do_count(book)
-            logging.info(f"calculated {loss=}")
-            self.gui.current_db.new_api.set_field("#new_words_loss", {book_id: loss})
+            try:
+                loss = do_count(book)
+            except Exception:
+                traceback.print_exc()
+            else:
+                logging.info(f"calculated {loss=}")
+                self.gui.current_db.new_api.set_field(
+                    "#new_words_loss", {book_id: loss}
+                )
         logging.info(f"About to refresh GUI - book_ids={self.book_ids}")
         self.gui.library_view.model().refresh_ids(self.book_ids)
         self.gui.library_view.model().refresh_ids(
