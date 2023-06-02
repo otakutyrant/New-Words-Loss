@@ -98,6 +98,7 @@ def generate_lemmas_by_ai(
                 elif (
                     word.pos not in ("PUNCT", "NUM", "SYM", "X")
                     and word.lemma is not None
+                    and is_valid_word(word.lemma)
                 ):
                     # Stanza seems to generate some lemmas with a capital letter
                     # in the beginning. Altough lowering all lemmas means "I"
