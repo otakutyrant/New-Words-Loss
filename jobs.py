@@ -1,3 +1,4 @@
+import logging
 import re
 import typing
 from collections import Counter
@@ -102,6 +103,7 @@ def generate_lemmas_by_ai(
                     # Stanza seems to generate some lemmas with a capital letter
                     # in the beginning. Altough lowering all lemmas means "I"
                     # is affected too.
+                    logging.debug(f"{word.lemma=} {word.pos=}")
                     lemma_counter[word.lemma.lower()] += 1
         for word, count in lemma_counter.most_common():
             lemma_file.write(f"{word} {count}\n")
@@ -135,6 +137,7 @@ def generate_new_words(lemma_pathname: Path) -> Path:
         del counter[word]
 
     new_words_pathname = lemma_pathname.parent / "new_words.txt"
+    logging.debug(f"{new_words_pathname=}")
     with open(new_words_pathname, "w") as new_words_file:
         for word, count in counter.most_common():
             new_words_file.write(f"{word} {count}\n")
