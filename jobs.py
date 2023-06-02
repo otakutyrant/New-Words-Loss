@@ -22,13 +22,12 @@ def do_count(book):
     return loss
 
 
+def is_valid_word(word: str):
+    return all(char.isalpha() or char == "-" for char in word)
+
+
 def filter_to_valid_words(file_):
-    words = [
-        word
-        for line in file_
-        for word in line.split()
-        if word.isalpha() and word.isascii()
-    ]
+    words = [word for line in file_ for word in line.split() if is_valid_word(word)]
     return words
 
 
