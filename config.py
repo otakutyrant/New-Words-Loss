@@ -16,7 +16,7 @@ PLUGIN_ICONS = ["images/new_words.png"]
 prefs = JSONConfig("plugins/new_words")
 
 # Set defaults
-prefs.defaults["learned_words_pathname"] = Path.home() / "learned_words.txt"
+prefs.defaults["learned_words_pathname"] = str(Path.home() / "learned_words.txt")
 
 
 class ConfigWidget(QWidget):
@@ -50,6 +50,4 @@ class ConfigWidget(QWidget):
         self.learned_words_pathname_line_edit.setText(path)
 
     def save_settings(self):
-        prefs["learned_words_pathname"] = Path(
-            self.learned_words_pathname_line_edit.text()
-        )
+        prefs["learned_words_pathname"] = self.learned_words_pathname_line_edit.text()
