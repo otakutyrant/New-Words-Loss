@@ -19,3 +19,8 @@ repos:
       - id: black
         args: [--config=./pyproject.toml]
         hook-stage: commit
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.8.0
+    hooks:
+      - id: yamlfmt
+        hook-stage: commit
