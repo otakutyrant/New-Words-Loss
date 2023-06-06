@@ -17,9 +17,9 @@ from calibre_plugins.new_words.config import prefs
 
 def do_count(book):
     lemma_pathname = generate_lemmas(book.pathname)
-    new_words_pathname = generate_new_words(lemma_pathname)
+    new_words_pathname, counter = generate_new_words(lemma_pathname)
     loss = new_word_loss(new_words_pathname)
-    return loss
+    return loss, counter
 
 
 def is_valid_word(word: str):
@@ -141,7 +141,7 @@ def generate_new_words(lemma_pathname: Path) -> Path:
     with open(new_words_pathname, "w") as new_words_file:
         for word, count in counter.most_common():
             new_words_file.write(f"{word} {count}\n")
-    return new_words_pathname
+    return new_words_pathname, counter
 
 
 def new_word_loss(new_words_pathname: Path):

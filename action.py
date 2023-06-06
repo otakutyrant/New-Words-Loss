@@ -1,6 +1,6 @@
 import logging
 import traceback
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from pathlib import Path
 from typing import NamedTuple
 
@@ -49,7 +49,7 @@ class NewWordsAction(InterfaceAction):
                 "Iterate all selected books, "
                 "and generate one whole lemmas.txt that counts new words"
             ),
-            triggered=self._all_for_one,
+            triggered=self._all_for_one_trigged,
         )
         self.qaction.setMenu(self.menu)
 
@@ -126,7 +126,7 @@ class NewWordsAction(InterfaceAction):
             logging.info(f"handling {title=} {pathname=}")
             book = Book(book_id, title, pathname)
             try:
-                loss = do_count(book)
+                loss, _ = do_count(book)
             except Exception:
                 traceback.print_exc()
             else:
@@ -144,5 +144,28 @@ class NewWordsAction(InterfaceAction):
             f"Counting new_words_loss in {len(self.book_ids)} books"
         )
 
-    def _all_for_one(self):
-        raise NotImplementedError
+    def _all_for_one_trigged(self):
+        if self._are_selected_books_available():
+            self._do_all_for_one()
+
+    def _do_all_for_one(self):
+        total_counter = Counter()
+        for book_id in self.book_ids:
+            title = self.gui.current_db.new_api.field_for("title", book_id)
+            pathname = Path(self.gui.current_db.new_api.format_abspath(book_id, "txt"))
+            logging.info(f"handling {title=} {pathname=}")
+            book = Book(book_id, title, pathname)
+            try:
+                _, counter = do_count(book)
+            except Exception:
+                traceback.print_exc()
+            else:
+                logging.info("counting new words")
+                total_counter += counter
+        all_for_one_file_pathname = Path.home() / "all_for_one.txt"
+        with open(all_for_one_file_pathname, "w") as all_for_one_file:
+            for word, count in total_counter.most_common():
+                all_for_one_file.write(f"{word} {count}\n")
+        message = f"All for One done! {all_for_one_file_pathname}"
+        logging.info(message)
+        self.gui.status_bar.show_message(message)
