@@ -9,7 +9,7 @@
 
 # Features
 
-ALl for One: Iterates all selected books and generate a whole file that counts new words. Then you can memorize them.
+All for One: Iterate all selected books and generate a whole file that counts and sort new words. Then you can memorize them effectively.
 
 # TODO
 
