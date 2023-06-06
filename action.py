@@ -48,19 +48,22 @@ class NewWordsAction(InterfaceAction):
     def config(self):
         self.interface_action_base_plugin.do_user_config(self.gui)
 
-    def _toolbar_triggered(self):
+    def _are_selected_books_available(self):
         if self._check_the_custom_column() is False:
             logging.warning("the custom column new_words_loss is not defined")
-            return
+            return False
 
         self.book_ids = self.gui.library_view.get_selected_ids()
         if not self._is_book_selected():
             logging.warning("no book selected")
-            return
+            return False
 
         self._filter_book_ids_by_format()
+        return len(self.book_ids) > 0
 
-        self._do_job()
+    def _toolbar_triggered(self):
+        if self._are_selected_books_available():
+            self._do_job()
 
     def _check_the_custom_column(self) -> bool:
         custom_columns = self.gui.library_view.model().custom_columns.keys()
