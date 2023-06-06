@@ -7,6 +7,7 @@ from typing import NamedTuple
 from calibre.ebooks.conversion.config import get_available_formats_for_book
 from calibre.gui2 import warning_dialog
 from calibre.gui2.actions import InterfaceAction
+from calibre_plugins.new_words.config import prefs
 from calibre_plugins.new_words.jobs import do_count
 from PyQt6.QtGui import QIcon
 
@@ -162,7 +163,7 @@ class NewWordsAction(InterfaceAction):
             else:
                 logging.info("counting new words")
                 total_counter += counter
-        all_for_one_file_pathname = Path.home() / "all_for_one.txt"
+        all_for_one_file_pathname = prefs["all_for_one_pathname"]
         with open(all_for_one_file_pathname, "w") as all_for_one_file:
             for word, count in total_counter.most_common():
                 all_for_one_file.write(f"{word} {count}\n")

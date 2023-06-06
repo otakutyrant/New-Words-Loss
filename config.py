@@ -17,6 +17,7 @@ prefs = JSONConfig("plugins/new_words")
 
 # Set defaults
 prefs.defaults["learned_words_pathname"] = str(Path.home() / "learned_words.txt")
+prefs.defaults["all_for_one_pathname"] = str(Path.home() / "all_for_one.txt")
 
 
 class ConfigWidget(QWidget):
@@ -43,11 +44,32 @@ class ConfigWidget(QWidget):
         choose_path_button.clicked.connect(self.set_learned_words_pathname)
         layout.addWidget(choose_path_button, 0, 2, 1, 1)
 
+        label = QLabel("All for One path:")
+        layout.addWidget(label, 1, 0, 1, 1)
+
+        self.all_for_one_pathname_line_edit = QLineEdit(self)
+        self.all_for_one_pathname_line_edit.setPlaceholderText(
+            "Choose the path of the All for One file"
+        )
+        self.all_for_one_pathname_line_edit.setText(str(prefs["all_for_one_pathname"]))
+        layout.addWidget(self.all_for_one_pathname_line_edit, 1, 1, 1, 2)
+
+        choose_path_button = QPushButton("Choose Path")
+        choose_path_button.clicked.connect(self.set_learned_words_pathname)
+        layout.addWidget(choose_path_button, 1, 2, 1, 1)
+
     def set_learned_words_pathname(self):
         path, _ = QFileDialog.getOpenFileName(
             self, "Choose File", ".", "Text Files (*.txt)"
         )
         self.learned_words_pathname_line_edit.setText(path)
 
+    def set_all_for_one_pathname(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Choose File", ".", "Text Files (*.txt)"
+        )
+        self.all_for_one_pathname_line_edit.setText(path)
+
     def save_settings(self):
         prefs["learned_words_pathname"] = self.learned_words_pathname_line_edit.text()
+        prefs["all_for_one_file_pathname"] = self.all_for_one_pathname_line_edit.text()
