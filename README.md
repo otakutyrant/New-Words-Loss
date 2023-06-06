@@ -7,6 +7,10 @@
 * numpy
 * stanza (optional, generate lemmas better than the traditional way)
 
+# Features
+
+ALl for One: Iterates all selected books and generate a whole file that counts new words. Then you can memorize them.
+
 # TODO
 
 * Explain new word loss here.
