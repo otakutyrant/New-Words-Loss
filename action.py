@@ -40,6 +40,17 @@ class NewWordsAction(InterfaceAction):
             icon=QIcon.ic("config.png"),
             triggered=self.config,
         )
+        self.create_menu_action(
+            self.menu,
+            "All for One",
+            "All for One",
+            icon=QIcon.ic("save.png"),
+            description=(
+                "Iterate all selected books, "
+                "and generate one whole lemmas.txt that counts new words"
+            ),
+            triggered=self._all_for_one,
+        )
         self.qaction.setMenu(self.menu)
 
     def location_selected(self, loc):
@@ -132,3 +143,6 @@ class NewWordsAction(InterfaceAction):
         self.gui.status_bar.show_message(
             f"Counting new_words_loss in {len(self.book_ids)} books"
         )
+
+    def _all_for_one(self):
+        raise NotImplementedError
