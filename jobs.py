@@ -4,8 +4,6 @@ import typing
 from collections import Counter
 from pathlib import Path
 
-import numpy as np
-
 try:
     import stanza
 except ImportError:
@@ -18,8 +16,7 @@ from calibre_plugins.new_words.config import prefs
 def do_count(book):
     lemma_pathname = generate_lemmas(book.pathname)
     new_words_pathname, counter = generate_new_words(lemma_pathname)
-    loss = new_word_loss(new_words_pathname)
-    return loss, counter
+    return counter
 
 
 def is_valid_word(word: str):
@@ -142,15 +139,3 @@ def generate_new_words(lemma_pathname: Path) -> Path:
         for word, count in counter.most_common():
             new_words_file.write(f"{word} {count}\n")
     return new_words_pathname, counter
-
-
-def new_word_loss(new_words_pathname: Path):
-    counts = []
-    with open(new_words_pathname) as file_:
-        for line in file_:
-            _, count = line.split()
-            counts.append(int(count))
-    counts = np.array(counts)
-    probabilities = counts / np.sum(counts)
-    new_word_loss = np.sum(-probabilities * np.log(probabilities))
-    return new_word_loss

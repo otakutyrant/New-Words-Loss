@@ -4,6 +4,7 @@ from collections import Counter, OrderedDict
 from pathlib import Path
 from typing import NamedTuple
 
+import numpy as np
 from calibre.ebooks.conversion.config import get_available_formats_for_book
 from calibre.gui2 import warning_dialog
 from calibre.gui2.actions import InterfaceAction
@@ -120,6 +121,11 @@ class NewWordsAction(InterfaceAction):
             ).exec_()
         logging.info("end filtering books with txt format")
 
+    def _new_word_loss(self, counts: np.ndarray):
+        probabilities = counts / np.sum(counts)
+        new_word_loss = np.sum(-probabilities * np.log(probabilities))
+        return new_word_loss
+
     def _do_job(self):
         for book_id in self.book_ids:
             title = self.gui.current_db.new_api.field_for("title", book_id)
@@ -127,7 +133,9 @@ class NewWordsAction(InterfaceAction):
             logging.info(f"handling {title=} {pathname=}")
             book = Book(book_id, title, pathname)
             try:
-                loss, _ = do_count(book)
+                counter = do_count(book)
+                counts = np.array(list(counter.values()))
+                loss = self._new_word_loss(counts)
             except Exception:
                 traceback.print_exc()
             else:
@@ -157,7 +165,7 @@ class NewWordsAction(InterfaceAction):
             logging.info(f"handling {title=} {pathname=}")
             book = Book(book_id, title, pathname)
             try:
-                _, counter = do_count(book)
+                counter = do_count(book)
             except Exception:
                 traceback.print_exc()
             else:
