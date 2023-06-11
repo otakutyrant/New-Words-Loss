@@ -17,5 +17,5 @@ All for One: Iterate all selected books and generate a whole file that counts an
 * ~~Use an AI lemmatizer to handle lemmas.~~
 * Use job manager. https://www.mobileread.com/forums/showthread.php?p=4326379
 * Use progression bar like count_pages.
-* Show new words count and top five items.
+* ~~Show new words count and top five items.~~
 * Fix config widget size. https://www.mobileread.com/forums/showthread.php?t=354124
