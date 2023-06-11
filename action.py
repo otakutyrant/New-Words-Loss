@@ -63,7 +63,9 @@ class NewWordsAction(InterfaceAction):
 
     def _are_selected_books_available(self):
         if self._check_the_custom_column() is False:
-            logging.warning("the custom column new_words_loss is not defined")
+            logging.warning(
+                "the custom column new_words_loss or top_five_new_words is not defined"
+            )
             return False
 
         self.book_ids = self.gui.library_view.get_selected_ids()
@@ -80,7 +82,10 @@ class NewWordsAction(InterfaceAction):
 
     def _check_the_custom_column(self) -> bool:
         custom_columns = self.gui.library_view.model().custom_columns.keys()
-        return "#new_words_loss" in custom_columns
+        return (
+            "#new_words_loss" in custom_columns
+            and "#top_five_new_words" in custom_columns
+        )
 
     def _is_book_selected(self):
         # TODO: what is the relationship between self.is_library_selected and
@@ -136,12 +141,20 @@ class NewWordsAction(InterfaceAction):
                 counter = do_count(book)
                 counts = np.array(list(counter.values()))
                 loss = self._new_word_loss(counts)
+                tops = counter.most_common(5)
+                top_five_new_words = " ".join(
+                    f"{new_word}: {count}" for new_word, count in tops
+                )
             except Exception:
                 traceback.print_exc()
             else:
                 logging.info(f"calculated {loss=}")
                 self.gui.current_db.new_api.set_field(
                     "#new_words_loss", {book_id: loss}
+                )
+                self.gui.current_db.new_api.set_field(
+                    "#top_five_new_words",
+                    {book_id: top_five_new_words},
                 )
         logging.info(f"About to refresh GUI - book_ids={self.book_ids}")
         self.gui.library_view.model().refresh_ids(self.book_ids)
