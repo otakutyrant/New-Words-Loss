@@ -3,7 +3,15 @@
 from pathlib import Path
 
 from calibre.utils.config import JSONConfig
-from qt.core import QFileDialog, QGridLayout, QLabel, QLineEdit, QPushButton, QWidget
+from qt.core import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 PLUGIN_ICONS = ["images/new_words.png"]
 
@@ -23,13 +31,15 @@ prefs.defaults["all_for_one_pathname"] = str(Path.home() / "all_for_one.txt")
 class ConfigWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self.setGeometry(20, 20, 20, 20)
 
-        layout = QGridLayout()
-        self.setLayout(layout)
+        vboxlayout = QVBoxLayout()
+        self.setLayout(vboxlayout)
+
+        hboxlayout = QHBoxLayout()
+        vboxlayout.addLayout(hboxlayout)
 
         label = QLabel("Learned Words txt path:")
-        layout.addWidget(label, 0, 0, 1, 1)
+        hboxlayout.addWidget(label)
 
         self.learned_words_pathname_line_edit = QLineEdit(self)
         self.learned_words_pathname_line_edit.setPlaceholderText(
@@ -38,25 +48,28 @@ class ConfigWidget(QWidget):
         self.learned_words_pathname_line_edit.setText(
             str(prefs["learned_words_pathname"])
         )
-        layout.addWidget(self.learned_words_pathname_line_edit, 0, 1, 1, 2)
+        hboxlayout.addWidget(self.learned_words_pathname_line_edit)
 
         choose_path_button = QPushButton("Choose Path")
         choose_path_button.clicked.connect(self.set_learned_words_pathname)
-        layout.addWidget(choose_path_button, 0, 2, 1, 1)
+        hboxlayout.addWidget(choose_path_button)
+
+        hboxlayout = QHBoxLayout()
+        vboxlayout.addLayout(hboxlayout)
 
         label = QLabel("All for One path:")
-        layout.addWidget(label, 1, 0, 1, 1)
+        hboxlayout.addWidget(label)
 
         self.all_for_one_pathname_line_edit = QLineEdit(self)
         self.all_for_one_pathname_line_edit.setPlaceholderText(
             "Choose the path of the All for One file"
         )
         self.all_for_one_pathname_line_edit.setText(str(prefs["all_for_one_pathname"]))
-        layout.addWidget(self.all_for_one_pathname_line_edit, 1, 1, 1, 2)
+        hboxlayout.addWidget(self.all_for_one_pathname_line_edit)
 
         choose_path_button = QPushButton("Choose Path")
         choose_path_button.clicked.connect(self.set_learned_words_pathname)
-        layout.addWidget(choose_path_button, 1, 2, 1, 1)
+        hboxlayout.addWidget(choose_path_button)
 
     def set_learned_words_pathname(self):
         path, _ = QFileDialog.getOpenFileName(
