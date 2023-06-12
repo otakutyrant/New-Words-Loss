@@ -20,3 +20,4 @@ All for One: Iterate all selected books and generate a whole file that counts an
 * ~~Show new words count and top five items.~~
 * ~~Fix config widget size. https://www.mobileread.com/forums/showthread.php?t=354124~~
 * Use calibre.ptempfile instead of txt format so the later is not necessary any more.
+* Use gui2.warning_dialog to complement existing logging.warning
