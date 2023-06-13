@@ -58,12 +58,12 @@ class NewWordsAction(InterfaceAction):
                 "the custom column new_words_loss or top_five_new_words or "
                 "new_words_count is not defined"
             )
-            return False
+            return []
 
         book_ids = self.gui.library_view.get_selected_ids()
         if not self._is_book_selected(book_ids):
             logging.warning("no book selected")
-            return False
+            return []
 
         book_ids = self._filter_book_ids_by_format(book_ids)
         books = []
