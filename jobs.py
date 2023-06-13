@@ -14,7 +14,7 @@ except ImportError:
 else:
     has_stanza_installed = True
 
-from calibre_plugins.new_words.config import prefs
+from calibre_plugins.new_words_loss.config import prefs
 
 
 def do_count(book_pathname):
@@ -154,7 +154,7 @@ def new_word_loss(counts: np.ndarray):
 def do_jobs(books: tuple, cpus, notification):
     logging.debug("do_jobs function executed")
 
-    from calibre_plugins.new_words.action import Book
+    from calibre_plugins.new_words_loss.action import Book
 
     # to avoid circular import
     books = [Book(*book) for book in books]
@@ -180,7 +180,7 @@ def do_job_for_one_book(book_pathname):
 
 
 def do_all_for_one(books: tuple, cpus, notification):
-    from calibre_plugins.new_words.action import Book
+    from calibre_plugins.new_words_loss.action import Book
 
     # to avoid circular import
     books = [Book(*book) for book in books]

@@ -13,7 +13,7 @@ from qt.core import (
     QWidget,
 )
 
-PLUGIN_ICONS = ["images/new_words.png"]
+PLUGIN_ICONS = ["images/new_words_loss.png"]
 
 
 # This is where all preferences for this plugin will be stored
@@ -21,7 +21,7 @@ PLUGIN_ICONS = ["images/new_words.png"]
 # in a global namespace, so make it as unique as possible.
 # You should always prefix your config file name with plugins/,
 # so as to ensure you dont accidentally clobber a calibre config file
-prefs = JSONConfig("plugins/new_words")
+prefs = JSONConfig("plugins/new_words_loss")
 
 # Set defaults
 prefs.defaults["learned_words_pathname"] = str(Path.home() / "learned_words.txt")

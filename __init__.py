@@ -28,7 +28,7 @@ class ActionNewWords(InterfaceActionBase):
     # This field defines the GUI plugin class that contains all the code
     # that actually does something. Its format is module_path:class_name
     # The specified class must be defined in the specified module.
-    actual_plugin = "calibre_plugins.new_words.action:NewWordsAction"
+    actual_plugin = "calibre_plugins.new_words_loss.action:NewWordsAction"
 
     def is_customizable(self):
         """
@@ -59,7 +59,7 @@ class ActionNewWords(InterfaceActionBase):
         # top of the module as importing the config class will also cause the
         # GUI libraries to be loaded, which we do not want when using calibre
         # from the command line
-        from calibre_plugins.new_words.config import ConfigWidget
+        from calibre_plugins.new_words_loss.config import ConfigWidget
 
         return ConfigWidget()
 

@@ -11,17 +11,17 @@ Book = namedtuple("Book", "id, title, pathname")
 
 
 class NewWordsAction(InterfaceAction):
-    name = "New Words"
+    name = "New Words Loss"
     # Create our top-level menu/toolbar action
     # (text, icon_path, tooltip, keyboard shortcut)
-    action_spec = ("New Words", None, "Analyze new words in a book.", ())
+    action_spec = ("New Words Loss", None, "Analyze new words in a book.", ())
     action_type = "current"
     action_add_menu = True
 
     def genesis(self):
         self.is_library_selected = True
 
-        icon = get_icons("images/new_words.png", "New Words")  # noqa: F821
+        icon = get_icons("images/new_words_loss.png", "New Words Loss")  # noqa: F821
         self.qaction.setIcon(icon)
         self.qaction.triggered.connect(self._toolbar_triggered)
 
@@ -84,7 +84,7 @@ class NewWordsAction(InterfaceAction):
         books = [tuple(book) for book in books]
         cpus = self.gui.job_manager.server.pool_size
         args = [
-            "calibre_plugins.new_words.jobs",
+            "calibre_plugins.new_words_loss.jobs",
             "do_jobs",
             (books, cpus),
         ]
@@ -139,7 +139,7 @@ class NewWordsAction(InterfaceAction):
             messages = "\n".join(messages)
             warning_dialog(
                 self.gui,
-                "new_words warnings",
+                "new_words_loss warnings",
                 summary,
                 messages,
             ).exec_()
@@ -156,7 +156,7 @@ class NewWordsAction(InterfaceAction):
         books = [tuple(book) for book in books]
         cpus = self.gui.job_manager.server.pool_size
         args = [
-            "calibre_plugins.new_words.jobs",
+            "calibre_plugins.new_words_loss.jobs",
             "do_all_for_one",
             (books, cpus),
         ]
