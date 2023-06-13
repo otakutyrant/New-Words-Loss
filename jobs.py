@@ -1,8 +1,11 @@
 import logging
 import re
+import traceback
 import typing
 from collections import Counter
 from pathlib import Path
+
+import numpy as np
 
 try:
     import stanza
@@ -10,11 +13,12 @@ except ImportError:
     has_stanza_installed = False
 else:
     has_stanza_installed = True
+
 from calibre_plugins.new_words.config import prefs
 
 
-def do_count(book):
-    lemma_pathname = generate_lemmas(book.pathname)
+def do_count(book_pathname):
+    lemma_pathname = generate_lemmas(book_pathname)
     new_words_pathname, counter = generate_new_words(lemma_pathname)
     return counter
 
@@ -139,3 +143,61 @@ def generate_new_words(lemma_pathname: Path) -> Path:
         for word, count in counter.most_common():
             new_words_file.write(f"{word} {count}\n")
     return new_words_pathname, counter
+
+
+def new_word_loss(counts: np.ndarray):
+    probabilities = counts / np.sum(counts)
+    new_word_loss = np.sum(-probabilities * np.log(probabilities))
+    return new_word_loss
+
+
+def do_jobs(books: tuple, cpus, notification):
+    logging.debug("do_jobs function executed")
+
+    from calibre_plugins.new_words.action import Book
+
+    # to avoid circular import
+    books = [Book(*book) for book in books]
+
+    book_stats_map = {}
+    for index, book in enumerate(books):
+        logging.info(f"handling {book.title=} {book.pathname=}")
+        book_stats_map[book.id] = do_job_for_one_book(book.pathname)
+        notification(index / len(books))
+    logging.info("All inference are done.")
+
+    return book_stats_map
+
+
+def do_job_for_one_book(book_pathname):
+    counter = do_count(book_pathname)
+    counts = np.array(list(counter.values()))
+    loss = new_word_loss(counts)
+    tops = counter.most_common(5)
+    top_five_new_words = " ".join(f"{new_word}: {count}" for new_word, count in tops)
+    new_words_count = len(counter)
+    return loss, top_five_new_words, new_words_count
+
+
+def do_all_for_one(books: tuple, cpus, notification):
+    from calibre_plugins.new_words.action import Book
+
+    # to avoid circular import
+    books = [Book(*book) for book in books]
+
+    total_counter = Counter()
+    for index, book in enumerate(books, start=1):
+        logging.info(f"handling {book.title=} {book.pathname=}")
+        try:
+            counter = do_count(book.pathname)
+        except Exception:
+            traceback.print_exc()
+        else:
+            logging.info("counting new words")
+            total_counter += counter
+            notification(index / len(books))
+    all_for_one_file_pathname = prefs["all_for_one_pathname"]
+    with open(all_for_one_file_pathname, "w") as all_for_one_file:
+        for word, count in total_counter.most_common():
+            all_for_one_file.write(f"{word} {count}\n")
+    logging.info(f"All for One done! {all_for_one_file_pathname}")

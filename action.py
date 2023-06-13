@@ -1,22 +1,13 @@
 import logging
-import traceback
-from collections import Counter, OrderedDict
+from collections import OrderedDict, namedtuple
 from pathlib import Path
-from typing import NamedTuple
 
-import numpy as np
 from calibre.ebooks.conversion.config import get_available_formats_for_book
 from calibre.gui2 import warning_dialog
 from calibre.gui2.actions import InterfaceAction
-from calibre_plugins.new_words.config import prefs
-from calibre_plugins.new_words.jobs import do_count
 from PyQt6.QtGui import QIcon
 
-
-class Book(NamedTuple):
-    book_id: int
-    title: str
-    pathname: Path
+Book = namedtuple("Book", "id, title, pathname")
 
 
 class NewWordsAction(InterfaceAction):
@@ -61,7 +52,7 @@ class NewWordsAction(InterfaceAction):
     def config(self):
         self.interface_action_base_plugin.do_user_config(self.gui)
 
-    def _are_selected_books_available(self):
+    def _get_available_books(self):
         if self._check_the_custom_column() is False:
             logging.warning(
                 "the custom column new_words_loss or top_five_new_words or "
@@ -69,17 +60,43 @@ class NewWordsAction(InterfaceAction):
             )
             return False
 
-        self.book_ids = self.gui.library_view.get_selected_ids()
-        if not self._is_book_selected():
+        book_ids = self.gui.library_view.get_selected_ids()
+        if not self._is_book_selected(book_ids):
             logging.warning("no book selected")
             return False
 
-        self._filter_book_ids_by_format()
-        return len(self.book_ids) > 0
+        book_ids = self._filter_book_ids_by_format(book_ids)
+        books = []
+        for book_id in book_ids:
+            title = self.gui.current_db.new_api.field_for("title", book_id)
+            pathname = Path(self.gui.current_db.new_api.format_abspath(book_id, "txt"))
+            book = Book(book_id, title, pathname)
+            books.append(book)
+        logging.debug(f"{books=}")
+        return books
 
     def _toolbar_triggered(self):
-        if self._are_selected_books_available():
-            self._do_job()
+        books = self._get_available_books()
+        # Unfortuanately, only objects of basic types can pass to functions
+        # which are called by job_manager. So namedtuple objects are converted
+        # to tuple objects here.
+        # See: https://www.mobileread.com/forums/showthread.php?t=354128
+        books = [tuple(book) for book in books]
+        cpus = self.gui.job_manager.server.pool_size
+        args = [
+            "calibre_plugins.new_words.jobs",
+            "do_jobs",
+            (books, cpus),
+        ]
+        self.gui.job_manager.run_job(
+            self.Dispatcher(self._fill_fields),
+            "arbitrary_n",
+            args=args,
+            description="Infer New Word Loss",
+        )
+        self.gui.status_bar.show_message(
+            f"Infering New Words Loss in {len(books)} books."
+        )
 
     def _check_the_custom_column(self) -> bool:
         custom_columns = self.gui.library_view.model().custom_columns.keys()
@@ -89,16 +106,16 @@ class NewWordsAction(InterfaceAction):
             and "#new_words_count" in custom_columns
         )
 
-    def _is_book_selected(self):
+    def _is_book_selected(self, book_ids):
         # TODO: what is the relationship between self.is_library_selected and
         # self.gui.library_view.get_selected_ids()?
-        return self.is_library_selected and len(self.book_ids) > 0
+        return self.is_library_selected and len(book_ids) > 0
 
-    def _filter_book_ids_by_format(self):
+    def _filter_book_ids_by_format(self, book_ids):
         logging.info("start filtering books with txt format")
         remained_book_ids = []
         unexpected_results = OrderedDict()
-        for book_id in self.book_ids:
+        for book_id in book_ids:
             book_formats = get_available_formats_for_book(
                 self.gui.current_db.new_api, book_id
             )
@@ -108,7 +125,7 @@ class NewWordsAction(InterfaceAction):
                 unexpected_results[
                     book_id
                 ] = "You should convert the book to txt at first."
-        self.book_ids = remained_book_ids
+        book_ids = remained_book_ids
 
         if len(unexpected_results) > 0:
             summary = f"Could not analyse new words in \
@@ -128,73 +145,56 @@ class NewWordsAction(InterfaceAction):
             ).exec_()
         logging.info("end filtering books with txt format")
 
-    def _new_word_loss(self, counts: np.ndarray):
-        probabilities = counts / np.sum(counts)
-        new_word_loss = np.sum(-probabilities * np.log(probabilities))
-        return new_word_loss
+        return book_ids
 
-    def _do_job(self):
-        for book_id in self.book_ids:
-            title = self.gui.current_db.new_api.field_for("title", book_id)
-            pathname = Path(self.gui.current_db.new_api.format_abspath(book_id, "txt"))
-            logging.info(f"handling {title=} {pathname=}")
-            book = Book(book_id, title, pathname)
-            try:
-                counter = do_count(book)
-                counts = np.array(list(counter.values()))
-                loss = self._new_word_loss(counts)
-                tops = counter.most_common(5)
-                top_five_new_words = " ".join(
-                    f"{new_word}: {count}" for new_word, count in tops
-                )
-                new_words_count = len(counter)
-            except Exception:
-                traceback.print_exc()
-            else:
-                logging.info(f"calculated {loss=}")
-                self.gui.current_db.new_api.set_field(
-                    "#new_words_loss", {book_id: loss}
-                )
-                self.gui.current_db.new_api.set_field(
-                    "#top_five_new_words",
-                    {book_id: top_five_new_words},
-                )
-                self.gui.current_db.new_api.set_field(
-                    "#new_words_count",
-                    {book_id: new_words_count},
-                )
-        logging.info(f"About to refresh GUI - book_ids={self.book_ids}")
-        self.gui.library_view.model().refresh_ids(self.book_ids)
+    def _all_for_one_trigged(self):
+        books = self._get_available_books()
+        # Unfortuanately, only objects of basic types can pass to functions
+        # which are called by job_manager. So namedtuple objects are converted
+        # to tuple objects here.
+        # See: https://www.mobileread.com/forums/showthread.php?t=354128
+        books = [tuple(book) for book in books]
+        cpus = self.gui.job_manager.server.pool_size
+        args = [
+            "calibre_plugins.new_words.jobs",
+            "do_all_for_one",
+            (books, cpus),
+        ]
+        self.gui.job_manager.run_job(
+            None,
+            "arbitrary_n",
+            args=args,
+            description="All for One!",
+        )
+        self.gui.status_bar.show_message(f"All for One done in {len(books)} books.")
+
+    def _fill_fields(self, job):
+        logging.debug("_fill_fields function executed")
+        if job.failed:
+            return self.gui.job_exception(job, dialog_title="Failed to fill fields.")
+        book_stats_map = job.result
+        for book_id, (
+            loss,
+            top_five_new_words,
+            new_words_count,
+        ) in book_stats_map.items():
+            logging.info(f"calculated {loss=}")
+            self.gui.current_db.new_api.set_field("#new_words_loss", {book_id: loss})
+            self.gui.current_db.new_api.set_field(
+                "#top_five_new_words",
+                {book_id: top_five_new_words},
+            )
+            self.gui.current_db.new_api.set_field(
+                "#new_words_count",
+                {book_id: new_words_count},
+            )
+        book_ids = list(book_stats_map.keys())
+        logging.info(f"About to refresh self.gui - book_ids={book_ids}")
+        self.gui.library_view.model().refresh_ids(book_ids)
         self.gui.library_view.model().refresh_ids(
-            self.book_ids,
+            book_ids,
             current_row=self.gui.library_view.currentIndex().row(),
         )
         self.gui.status_bar.show_message(
-            f"Counting new_words_loss in {len(self.book_ids)} books"
+            f"Counting new_words_loss in {len(book_ids)} books"
         )
-
-    def _all_for_one_trigged(self):
-        if self._are_selected_books_available():
-            self._do_all_for_one()
-
-    def _do_all_for_one(self):
-        total_counter = Counter()
-        for book_id in self.book_ids:
-            title = self.gui.current_db.new_api.field_for("title", book_id)
-            pathname = Path(self.gui.current_db.new_api.format_abspath(book_id, "txt"))
-            logging.info(f"handling {title=} {pathname=}")
-            book = Book(book_id, title, pathname)
-            try:
-                counter = do_count(book)
-            except Exception:
-                traceback.print_exc()
-            else:
-                logging.info("counting new words")
-                total_counter += counter
-        all_for_one_file_pathname = prefs["all_for_one_pathname"]
-        with open(all_for_one_file_pathname, "w") as all_for_one_file:
-            for word, count in total_counter.most_common():
-                all_for_one_file.write(f"{word} {count}\n")
-        message = f"All for One done! {all_for_one_file_pathname}"
-        logging.info(message)
-        self.gui.status_bar.show_message(message)
