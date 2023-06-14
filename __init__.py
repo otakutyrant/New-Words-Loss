@@ -18,7 +18,7 @@ class ActionNewWords(InterfaceActionBase):
     calibre utilities to run without needing to load the GUI libraries.
     """
 
-    name = "New Words"
+    name = "New Words Loss"
     description = "Offer statistics about new words."
     supported_platforms = ["linux"]
     author = "otakutyrant"
