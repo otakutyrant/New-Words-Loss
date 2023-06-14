@@ -59,7 +59,7 @@ class NewWordsAction(InterfaceAction):
     def config(self):
         self.interface_action_base_plugin.do_user_config(self.gui)
 
-    def _get_available_books(self):
+    def _get_available_books(self) -> list[Book]:
         if not self._custom_columns_available():
             message = " or ".join(self.custom_columns.keys()) + " not available"
             logger.warning(message)
@@ -73,7 +73,7 @@ class NewWordsAction(InterfaceAction):
             warning_dialog(self.gui, "New Words Loss warnings", message)
             return []
 
-        book_ids = self._get_books_with_txt_format(book_ids)
+        book_ids = self._get_book_ids_with_txt_format(book_ids)
         books = []
         for book_id in book_ids:
             title = self.gui.current_db.new_api.field_for("title", book_id)
@@ -119,7 +119,7 @@ class NewWordsAction(InterfaceAction):
         # self.gui.library_view.get_selected_ids()?
         return self.is_library_selected and len(book_ids) > 0
 
-    def _get_books_with_txt_format(self, book_ids):
+    def _get_book_ids_with_txt_format(self, book_ids) -> list[int]:
         remained_book_ids = []
         other_book_ids = []
         for book_id in book_ids:

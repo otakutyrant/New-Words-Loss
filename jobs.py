@@ -90,8 +90,8 @@ def generate_lemmas_by_ai(
         book_context = book_file.read()
         book_context = preprocess_before_ai(book_context)
         doc = nlp(book_context)
-        lemma_counter = Counter()
-        pronoun_counter = Counter()
+        lemma_counter: Counter = Counter()
+        pronoun_counter: Counter = Counter()
         for sentence in doc.sentences:
             for word in sentence.words:
                 if word.pos == "PROPN":
@@ -120,7 +120,7 @@ def generate_lemmas(book_pathname: Path) -> Path:
         return generate_lemmas_by_lookup(book_pathname)
 
 
-def generate_new_words(lemma_pathname: Path) -> Path:
+def generate_new_words(lemma_pathname: Path) -> tuple[Path, Counter]:
     learned_words_pathname = prefs["learned_words_pathname"]
     learned_words = set()
     with open(learned_words_pathname) as file_:
@@ -151,13 +151,13 @@ def new_word_loss(counts: np.ndarray):
     return new_word_loss
 
 
-def do_jobs(books: tuple, cpus, notification):
+def do_jobs(books, cpus, notification):
     logger.debug("Start.")
 
     from calibre_plugins.new_words_loss.action import Book
 
     # to avoid circular import
-    books = [Book(*book) for book in books]
+    books: list[Book] = [Book(*book) for book in books]
 
     book_stats_map = {}
     for index, book in enumerate(books):
@@ -179,13 +179,13 @@ def do_job_for_one_book(book_pathname):
     return loss, top_five_new_words, new_words_count
 
 
-def do_all_for_one(books: tuple, cpus, notification):
+def do_all_for_one(books, cpus, notification):
     from calibre_plugins.new_words_loss.action import Book
 
     # to avoid circular import
     books = [Book(*book) for book in books]
 
-    total_counter = Counter()
+    total_counter: Counter = Counter()
     for index, book in enumerate(books, start=1):
         logger.info(f"handling {book.title=} {book.pathname=}")
         try:
