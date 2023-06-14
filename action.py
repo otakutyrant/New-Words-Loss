@@ -18,14 +18,6 @@ class NewWordsAction(InterfaceAction):
     action_type = "current"
     action_add_menu = True
 
-    def __init__(self):
-        self.super().__init__()
-        self.custom_columns = {
-            "#new_words_loss": "New Words Loss",
-            "#top_five_new_words": "Top Five New Words",
-            "#new_words_count": "New Words Count",
-        }
-
     def genesis(self):
         self.is_library_selected = True
 
@@ -54,6 +46,13 @@ class NewWordsAction(InterfaceAction):
         )
         self.qaction.setMenu(self.menu)
 
+        # It seems that __init__ cannot work well so I put this code here.
+        self.custom_columns = {
+            "#new_words_loss": "New Words Loss",
+            "#top_five_new_words": "Top Five New Words",
+            "#new_words_count": "New Words Count",
+        }
+
     def location_selected(self, loc):
         self.is_library_selected = loc == "library"
 
@@ -64,11 +63,14 @@ class NewWordsAction(InterfaceAction):
         if not self._custom_columns_available():
             message = " or ".join(self.custom_columns.keys()) + " not available"
             logger.warning(message)
+            warning_dialog(self.gui, "New Words Loss warnings", message)
             return []
 
         book_ids = self.gui.library_view.get_selected_ids()
         if not self._is_book_selected(book_ids):
-            logger.warning("no book selected")
+            message = "No book selected."
+            logger.warning()
+            warning_dialog(self.gui, "New Words Loss warnings", message)
             return []
 
         book_ids = self._get_books_with_txt_format(book_ids)
@@ -143,7 +145,7 @@ class NewWordsAction(InterfaceAction):
             )
             warning_dialog(
                 self.gui,
-                "new_words_loss warnings",
+                "New Words Loss warnings",
                 summary,
                 messages,
             ).exec_()
