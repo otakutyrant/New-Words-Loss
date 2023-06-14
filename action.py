@@ -1,4 +1,4 @@
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
 from pathlib import Path
 
 from calibre.ebooks.conversion.config import get_available_formats_for_book
@@ -65,7 +65,7 @@ class NewWordsAction(InterfaceAction):
             logger.warning("no book selected")
             return []
 
-        book_ids = self._filter_book_ids_by_format(book_ids)
+        book_ids = self._get_books_with_txt_format(book_ids)
         books = []
         for book_id in book_ids:
             title = self.gui.current_db.new_api.field_for("title", book_id)
@@ -114,9 +114,9 @@ class NewWordsAction(InterfaceAction):
         # self.gui.library_view.get_selected_ids()?
         return self.is_library_selected and len(book_ids) > 0
 
-    def _filter_book_ids_by_format(self, book_ids):
+    def _get_books_with_txt_format(self, book_ids):
         remained_book_ids = []
-        unexpected_results = OrderedDict()
+        other_book_ids = []
         for book_id in book_ids:
             book_formats = get_available_formats_for_book(
                 self.gui.current_db.new_api, book_id
@@ -124,21 +124,20 @@ class NewWordsAction(InterfaceAction):
             if "txt" in book_formats:
                 remained_book_ids.append(book_id)
             else:
-                unexpected_results[
-                    book_id
-                ] = "You should convert the book to txt at first."
+                other_book_ids.append(book_id)
         book_ids = remained_book_ids
 
-        if len(unexpected_results) > 0:
-            summary = f"Could not analyse new words in \
-                {len(unexpected_results)} of {len(self.book_ids)} books, \
-                for reasons shown in details below."
-            messages = []
-            for book_id, error in unexpected_results.items():
-                title = self.gui.current_db.new_api.field_for("title", book_id)
-                message = f"{title} ({error})"
-                messages.append(message)
-            messages = "\n".join(messages)
+        if len(other_book_ids) > 0:
+            summary = (
+                "Could not analyse new words in "
+                f"{len(other_book_ids)} of {len(book_ids)} books, "
+                "because they do not have txt format."
+            )
+            messages = "These books miss txt format:\n"
+            messages = messages + "\n".join(
+                self.gui.current_db.new_api.field_for("title", book_id)
+                for book_id in other_book_ids
+            )
             warning_dialog(
                 self.gui,
                 "new_words_loss warnings",
