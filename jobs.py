@@ -1,4 +1,3 @@
-import logging
 import re
 import traceback
 import typing
@@ -15,6 +14,7 @@ else:
     has_stanza_installed = True
 
 from calibre_plugins.new_words_loss.config import prefs
+from calibre_plugins.new_words_loss.log import logger
 
 
 def do_count(book_pathname):
@@ -104,7 +104,7 @@ def generate_lemmas_by_ai(
                     # Stanza seems to generate some lemmas with a capital letter
                     # in the beginning. Altough lowering all lemmas means "I"
                     # is affected too.
-                    logging.debug(f"{word.lemma=} {word.pos=}")
+                    logger.debug(f"{word.lemma=} {word.pos=}")
                     lemma_counter[word.lemma.lower()] += 1
         for word, count in lemma_counter.most_common():
             lemma_file.write(f"{word} {count}\n")
@@ -138,7 +138,7 @@ def generate_new_words(lemma_pathname: Path) -> Path:
         del counter[word]
 
     new_words_pathname = lemma_pathname.parent / "new_words.txt"
-    logging.debug(f"{new_words_pathname=}")
+    logger.debug(f"{new_words_pathname=}")
     with open(new_words_pathname, "w") as new_words_file:
         for word, count in counter.most_common():
             new_words_file.write(f"{word} {count}\n")
@@ -152,7 +152,7 @@ def new_word_loss(counts: np.ndarray):
 
 
 def do_jobs(books: tuple, cpus, notification):
-    logging.debug("do_jobs function executed")
+    logger.debug("Start.")
 
     from calibre_plugins.new_words_loss.action import Book
 
@@ -161,10 +161,10 @@ def do_jobs(books: tuple, cpus, notification):
 
     book_stats_map = {}
     for index, book in enumerate(books):
-        logging.info(f"handling {book.title=} {book.pathname=}")
+        logger.info(f"handling {book.title=} {book.pathname=}")
         book_stats_map[book.id] = do_job_for_one_book(book.pathname)
         notification(index / len(books))
-    logging.info("All inference are done.")
+    logger.info("All inference are done.")
 
     return book_stats_map
 
@@ -187,17 +187,18 @@ def do_all_for_one(books: tuple, cpus, notification):
 
     total_counter = Counter()
     for index, book in enumerate(books, start=1):
-        logging.info(f"handling {book.title=} {book.pathname=}")
+        logger.info(f"handling {book.title=} {book.pathname=}")
         try:
             counter = do_count(book.pathname)
         except Exception:
             traceback.print_exc()
         else:
-            logging.info("counting new words")
+            logger.info(f"counting new words: {len(counter)}")
             total_counter += counter
             notification(index / len(books))
     all_for_one_file_pathname = prefs["all_for_one_pathname"]
     with open(all_for_one_file_pathname, "w") as all_for_one_file:
         for word, count in total_counter.most_common():
             all_for_one_file.write(f"{word} {count}\n")
-    logging.info(f"All for One done! {all_for_one_file_pathname}")
+
+    logger.info(f"All for One done in {all_for_one_file_pathname}")

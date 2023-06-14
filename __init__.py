@@ -1,9 +1,5 @@
-import logging
-
 # The class that all Interface Action plugin wrappers must inherit from
 from calibre.customize import InterfaceActionBase
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 class ActionNewWords(InterfaceActionBase):

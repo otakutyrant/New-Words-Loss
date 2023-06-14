@@ -1,10 +1,10 @@
-import logging
 from collections import OrderedDict, namedtuple
 from pathlib import Path
 
 from calibre.ebooks.conversion.config import get_available_formats_for_book
 from calibre.gui2 import warning_dialog
 from calibre.gui2.actions import InterfaceAction
+from calibre_plugins.new_words_loss.log import logger
 from PyQt6.QtGui import QIcon
 
 Book = namedtuple("Book", "id, title, pathname")
@@ -54,7 +54,7 @@ class NewWordsAction(InterfaceAction):
 
     def _get_available_books(self):
         if self._check_the_custom_column() is False:
-            logging.warning(
+            logger.warning(
                 "the custom column new_words_loss or top_five_new_words or "
                 "new_words_count is not defined"
             )
@@ -62,7 +62,7 @@ class NewWordsAction(InterfaceAction):
 
         book_ids = self.gui.library_view.get_selected_ids()
         if not self._is_book_selected(book_ids):
-            logging.warning("no book selected")
+            logger.warning("no book selected")
             return []
 
         book_ids = self._filter_book_ids_by_format(book_ids)
@@ -72,7 +72,10 @@ class NewWordsAction(InterfaceAction):
             pathname = Path(self.gui.current_db.new_api.format_abspath(book_id, "txt"))
             book = Book(book_id, title, pathname)
             books.append(book)
-        logging.debug(f"{books=}")
+        books_for_debug = "\t".join(map(str, books))
+        logger.debug(books_for_debug)
+
+        logger.info(f"{len(books)} available books acquired.")
         return books
 
     def _toolbar_triggered(self):
@@ -94,9 +97,10 @@ class NewWordsAction(InterfaceAction):
             args=args,
             description="Infer New Word Loss",
         )
-        self.gui.status_bar.show_message(
-            f"Infering New Words Loss in {len(books)} books."
-        )
+
+        message = f"Infering New Words Loss in {len(books)} books."
+        self.gui.status_bar.show_message(message)
+        logger.info(message)
 
     def _check_the_custom_column(self) -> bool:
         custom_columns = self.gui.library_view.model().custom_columns.keys()
@@ -112,7 +116,6 @@ class NewWordsAction(InterfaceAction):
         return self.is_library_selected and len(book_ids) > 0
 
     def _filter_book_ids_by_format(self, book_ids):
-        logging.info("start filtering books with txt format")
         remained_book_ids = []
         unexpected_results = OrderedDict()
         for book_id in book_ids:
@@ -143,8 +146,8 @@ class NewWordsAction(InterfaceAction):
                 summary,
                 messages,
             ).exec_()
-        logging.info("end filtering books with txt format")
 
+        logger.debug(f"{len(book_ids)} books with txt format acquired.")
         return book_ids
 
     def _all_for_one_trigged(self):
@@ -166,11 +169,16 @@ class NewWordsAction(InterfaceAction):
             args=args,
             description="All for One!",
         )
-        self.gui.status_bar.show_message(f"All for One done in {len(books)} books.")
+
+        message = f"All for One done in {len(books)} books."
+        self.gui.status_bar.show_message(message)
+        logger.info(message)
 
     def _fill_fields(self, job):
-        logging.debug("_fill_fields function executed")
+        logger.debug("Start.")
+
         if job.failed:
+            logger.error("The inferting job totally failed.")
             return self.gui.job_exception(job, dialog_title="Failed to fill fields.")
         book_stats_map = job.result
         for book_id, (
@@ -178,7 +186,6 @@ class NewWordsAction(InterfaceAction):
             top_five_new_words,
             new_words_count,
         ) in book_stats_map.items():
-            logging.info(f"calculated {loss=}")
             self.gui.current_db.new_api.set_field("#new_words_loss", {book_id: loss})
             self.gui.current_db.new_api.set_field(
                 "#top_five_new_words",
@@ -188,13 +195,16 @@ class NewWordsAction(InterfaceAction):
                 "#new_words_count",
                 {book_id: new_words_count},
             )
+            title = self.gui.current_db.new_api.field_for("title", book_id)
+            logger.info(f"{title=} fields filled.")
+            logger.info(f"{book_id=} {loss=}")
+
         book_ids = list(book_stats_map.keys())
-        logging.info(f"About to refresh self.gui - book_ids={book_ids}")
         self.gui.library_view.model().refresh_ids(book_ids)
         self.gui.library_view.model().refresh_ids(
             book_ids,
             current_row=self.gui.library_view.currentIndex().row(),
         )
-        self.gui.status_bar.show_message(
-            f"Counting new_words_loss in {len(book_ids)} books"
-        )
+        message = f"New Words Loss done in {len(book_ids)} books. All fields updated."
+        self.gui.status_bar.show_message(message)
+        logger.info(message)
