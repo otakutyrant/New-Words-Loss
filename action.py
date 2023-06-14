@@ -99,7 +99,6 @@ class NewWordsAction(InterfaceAction):
         )
 
         message = f"Infering New Words Loss in {len(books)} books."
-        self.gui.status_bar.show_message(message)
         logger.info(message)
 
     def _check_the_custom_column(self) -> bool:
@@ -171,7 +170,6 @@ class NewWordsAction(InterfaceAction):
         )
 
         message = f"All for One done in {len(books)} books."
-        self.gui.status_bar.show_message(message)
         logger.info(message)
 
     def _fill_fields(self, job):
@@ -206,5 +204,4 @@ class NewWordsAction(InterfaceAction):
             current_row=self.gui.library_view.currentIndex().row(),
         )
         message = f"New Words Loss done in {len(book_ids)} books. All fields updated."
-        self.gui.status_bar.show_message(message)
         logger.info(message)
