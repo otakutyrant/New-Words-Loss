@@ -18,6 +18,14 @@ class NewWordsAction(InterfaceAction):
     action_type = "current"
     action_add_menu = True
 
+    def __init__(self):
+        self.super().__init__()
+        self.custom_columns = {
+            "#new_words_loss": "New Words Loss",
+            "#top_five_new_words": "Top Five New Words",
+            "#new_words_count": "New Words Count",
+        }
+
     def genesis(self):
         self.is_library_selected = True
 
@@ -53,11 +61,9 @@ class NewWordsAction(InterfaceAction):
         self.interface_action_base_plugin.do_user_config(self.gui)
 
     def _get_available_books(self):
-        if self._check_the_custom_column() is False:
-            logger.warning(
-                "the custom column new_words_loss or top_five_new_words or "
-                "new_words_count is not defined"
-            )
+        if not self._custom_columns_available():
+            message = " or ".join(self.custom_columns.keys()) + " not available"
+            logger.warning(message)
             return []
 
         book_ids = self.gui.library_view.get_selected_ids()
@@ -101,13 +107,10 @@ class NewWordsAction(InterfaceAction):
         message = f"Infering New Words Loss in {len(books)} books."
         logger.info(message)
 
-    def _check_the_custom_column(self) -> bool:
+    def _custom_columns_available(self) -> bool:
         custom_columns = self.gui.library_view.model().custom_columns.keys()
-        return (
-            "#new_words_loss" in custom_columns
-            and "#top_five_new_words" in custom_columns
-            and "#new_words_count" in custom_columns
-        )
+        intersection = set(self.custom_columns) & set(custom_columns)
+        return len(intersection) > 0
 
     def _is_book_selected(self, book_ids):
         # TODO: what is the relationship between self.is_library_selected and
@@ -178,23 +181,15 @@ class NewWordsAction(InterfaceAction):
             logger.error("The inferting job totally failed.")
             return self.gui.job_exception(job, dialog_title="Failed to fill fields.")
         book_stats_map = job.result
-        for book_id, (
-            loss,
-            top_five_new_words,
-            new_words_count,
-        ) in book_stats_map.items():
-            self.gui.current_db.new_api.set_field("#new_words_loss", {book_id: loss})
-            self.gui.current_db.new_api.set_field(
-                "#top_five_new_words",
-                {book_id: top_five_new_words},
-            )
-            self.gui.current_db.new_api.set_field(
-                "#new_words_count",
-                {book_id: new_words_count},
-            )
+        for book_id, stats in book_stats_map.items():
+            for custom_field, stat in zip(
+                self.custom_columns.keys(), stats, strict=True
+            ):
+                self.gui.current_db.new_api.set_field(custom_field, {book_id: stat})
+
             title = self.gui.current_db.new_api.field_for("title", book_id)
             logger.info(f"{title=} fields filled.")
-            logger.info(f"{book_id=} {loss=}")
+            logger.info(f"{book_id=} {stats=}")
 
         book_ids = list(book_stats_map.keys())
         self.gui.library_view.model().refresh_ids(book_ids)
