@@ -182,22 +182,44 @@ class NewWordsAction(InterfaceAction):
         if job.failed:
             logger.error("The inferting job totally failed.")
             return self.gui.job_exception(job, dialog_title="Failed to fill fields.")
+
+        def callback(payload):
+            self, book_stats_map = payload
+            logger.info("Proceed to fill columns.")
+            for book_id, stats in book_stats_map.items():
+                for custom_field, stat in zip(
+                    self.custom_columns.keys(), stats, strict=True
+                ):
+                    self.gui.current_db.new_api.set_field(custom_field, {book_id: stat})
+
+                title = self.gui.current_db.new_api.field_for("title", book_id)
+                logger.info(f"{title=} columns filled.")
+                logger.info(f"{book_id=} {stats=}")
+
+            book_ids = list(book_stats_map.keys())
+            self.gui.library_view.model().refresh_ids(book_ids)
+            self.gui.library_view.model().refresh_ids(
+                book_ids,
+                current_row=self.gui.library_view.currentIndex().row(),
+            )
+            message = (
+                f"New Words Loss done in {len(book_ids)} books. " "All columns updated."
+            )
+            logger.info(message)
+
         book_stats_map = job.result
-        for book_id, stats in book_stats_map.items():
-            for custom_field, stat in zip(
-                self.custom_columns.keys(), stats, strict=True
-            ):
-                self.gui.current_db.new_api.set_field(custom_field, {book_id: stat})
-
-            title = self.gui.current_db.new_api.field_for("title", book_id)
-            logger.info(f"{title=} fields filled.")
-            logger.info(f"{book_id=} {stats=}")
-
-        book_ids = list(book_stats_map.keys())
-        self.gui.library_view.model().refresh_ids(book_ids)
-        self.gui.library_view.model().refresh_ids(
-            book_ids,
-            current_row=self.gui.library_view.currentIndex().row(),
+        payload = (self, book_stats_map)
+        message = (
+            f"<p>New Word Loss plugin found <b>{len(book_stats_map)} "
+            "statistics</b>. "
+            "Proceed with updating columns in your library?"
         )
-        message = f"New Words Loss done in {len(book_ids)} books. All fields updated."
-        logger.info(message)
+        self.gui.proceed_question(
+            callback=callback,
+            payload=payload,  # Passed to the callback function.
+            html_log=job.details,
+            log_viewer_title="Count New Word Loss",
+            title="Count complete",
+            msg=message,
+            cancel_callback=lambda: logger.info("Canceled to fill columns."),
+        )
